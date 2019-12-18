@@ -5,7 +5,8 @@ import (
 	"net/http"
 )
 
-var registry *OrderRegistry
+// todo: pass store around as an argument to handlers instead of a global variable
+var store *Store
 
 // TODO: use golang djinn for response handling
 
@@ -18,7 +19,7 @@ var registry *OrderRegistry
 // use locks to protect automata state
 
 func main() {
-	registry = MakeOrderRegistry()
+	store = MakeStore()
 	http.HandleFunc("/", requestOrderHandler)
 	http.HandleFunc("/getStatus", getOrderStatusHandler)
 	http.HandleFunc("/cancel", cancelOrderHandler)

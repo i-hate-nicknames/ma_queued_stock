@@ -21,7 +21,7 @@ func requestOrderHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	registry.AddOrder(reqData.Items)
+	store.SubmitOrder(reqData.Items)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("%q", reqData)))
 }
@@ -34,7 +34,7 @@ func getOrderStatusHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	var response []byte
-	order, ok := registry.GetOrder(reqData.OrderId)
+	order, ok := store.GetOrder(reqData.OrderId)
 	if !ok {
 		response = []byte("Order not found!")
 	} else {
@@ -52,11 +52,11 @@ func cancelOrderHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	var response []byte
-	order, ok := registry.GetOrder(reqData.OrderId)
+	order, ok := store.GetOrder(reqData.OrderId)
 	if !ok {
 		response = []byte("Order not found!")
 	} else {
-		registry.CancelOrder(reqData.OrderId)
+		store.CancelOrder(reqData.OrderId)
 		response = []byte(order.status)
 	}
 	w.WriteHeader(http.StatusOK)
