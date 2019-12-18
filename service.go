@@ -20,7 +20,7 @@ var store *Store
 
 func main() {
 	store = MakeStore()
-	http.HandleFunc("/", requestOrderHandler)
+	http.HandleFunc("/submit", submitOrderHandler)
 	http.HandleFunc("/getStatus", getOrderStatusHandler)
 	http.HandleFunc("/cancel", cancelOrderHandler)
 	log.Fatal(http.ListenAndServe("localhost:8001", nil))

@@ -14,16 +14,17 @@ type OrderRequest struct {
 	OrderId int
 }
 
-func requestOrderHandler(w http.ResponseWriter, r *http.Request) {
+func submitOrderHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var reqData NewOrderRequest
 	err := decoder.Decode(&reqData)
 	if err != nil {
 		panic(err)
 	}
-	store.SubmitOrder(reqData.Items)
+	orderId := store.SubmitOrder(reqData.Items)
+	// todo: try to resolve order immediately
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("%q", reqData)))
+	w.Write([]byte(fmt.Sprintf("Order id: %d", orderId)))
 }
 
 func getOrderStatusHandler(w http.ResponseWriter, r *http.Request) {
