@@ -1,5 +1,7 @@
 package main
 
+import "sync"
+
 const (
 	STATUS_PENDING   = "pending"
 	STATUS_CANCELLED = "cancelled"
@@ -10,6 +12,7 @@ type Store struct {
 	machines    []*Machine
 	orders      map[int]*Order
 	nextOrderId int
+	mux         sync.Mutex // todo: switch to RW mutext for better performance of read operations
 }
 
 func MakeStore() *Store {
@@ -31,7 +34,8 @@ func MakeOrder(items []int) *Order {
 }
 
 func (s *Store) SubmitOrder(items []int) int {
-	// todo: lock because multiple requests can submit orders concurrently
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	order := MakeOrder(items)
 	s.orders[s.nextOrderId] = order
 	s.nextOrderId += 1
@@ -39,11 +43,12 @@ func (s *Store) SubmitOrder(items []int) int {
 }
 
 func (s *Store) ResolveOrder(orderId int) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	order, ok := s.GetOrder(orderId)
 	if !ok {
 		// todo: do something
 	}
-	// todo: lock order in case multiple routines may access the same order
 	for _, m := range s.machines {
 		taken, remains := m.TakeAll(order.items)
 		order.items = remains
@@ -62,14 +67,19 @@ func (s *Store) ResolveOrder(orderId int) {
 }
 
 func (s *Store) GetOrder(orderId int) (*Order, bool) {
-	// todo: lock
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	val, ok := s.orders[orderId]
 	return val, ok
 }
 
 func (s *Store) CancelOrder(orderId int) bool {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	if order, ok := s.orders[orderId]; ok {
+		// todo: return all items the order has taken to some machine
 		order.status = STATUS_CANCELLED
+		return false
 	}
 	return false
 }
