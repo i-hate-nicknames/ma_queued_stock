@@ -22,6 +22,7 @@ func submitOrderHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	orderId := store.SubmitOrder(reqData.Items)
+	store.ResolveOrder(orderId)
 	// todo: try to resolve order immediately
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("Order id: %d", orderId)))
