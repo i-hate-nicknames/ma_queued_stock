@@ -1,6 +1,9 @@
 package main
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 const (
 	STATUS_PENDING   = "pending"
@@ -42,12 +45,12 @@ func (s *Store) SubmitOrder(items []int) int {
 	return s.nextOrderId - 1
 }
 
-func (s *Store) ResolveOrder(orderId int) {
+func (s *Store) ResolveOrder(orderId int) (string, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	order, ok := s.GetOrder(orderId)
 	if !ok {
-		// todo: do something
+		return "", errors.New("Order not found!")
 	}
 	for _, m := range s.machines {
 		taken, remains := m.TakeAll(order.items)
@@ -65,10 +68,11 @@ func (s *Store) ResolveOrder(orderId int) {
 		order.status = STATUS_PENDING
 	}
 	// todo: try to resolve all other orders if we changed state of at least one machine
-	// tood: later we can use some scheduler structure with a separate routine, and schedule
+	// todo: later we can use some scheduler structure with a separate routine, and schedule
 	// order retries via it.
 	// Probably can add some checks that will only schedule orders that can take something from
 	// the updated state
+	return order.status, nil
 }
 
 func (s *Store) GetOrder(orderId int) (*Order, bool) {

@@ -22,9 +22,13 @@ func submitOrderHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	orderId := store.SubmitOrder(reqData.Items)
-	store.ResolveOrder(orderId)
+	status, err := store.ResolveOrder(orderId)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Failed to create an order"))
+	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("Order id: %d", orderId)))
+	w.Write([]byte(fmt.Sprintf("Order id: %d\nOrder status: %s", orderId, status)))
 }
 
 func getOrderStatusHandler(w http.ResponseWriter, r *http.Request) {
