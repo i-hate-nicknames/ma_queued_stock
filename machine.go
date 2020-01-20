@@ -17,9 +17,15 @@ func MakeMachine(id int, items []int) *Machine {
 	return &Machine{in: in, out: out, id: id}
 }
 
-func (m *Machine) Put(item int) {
+func (m *Machine) PutAll(items []int) {
 	m.mux.Lock()
 	defer m.mux.Unlock()
+	for _, item := range items {
+		m.put(item)
+	}
+}
+
+func (m *Machine) put(item int) {
 	m.in = append(m.in, item)
 }
 

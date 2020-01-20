@@ -90,9 +90,13 @@ func (s *Store) CancelOrder(orderId int) bool {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if order, ok := s.orders[orderId]; ok {
-		// todo: return all items the order has taken to some machine
+		if len(s.machines) == 0 {
+			panic("no machines to put cancelled order items")
+		}
+		m := s.machines[0]
+		m.PutAll(order.fetchedItems)
 		order.status = STATUS_CANCELLED
-		return false
+		return true
 	}
 	return false
 }

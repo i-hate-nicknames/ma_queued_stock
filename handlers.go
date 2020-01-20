@@ -60,6 +60,8 @@ func cancelOrderHandler(w http.ResponseWriter, r *http.Request) {
 	order, ok := store.GetOrder(reqData.OrderId)
 	if !ok {
 		response = []byte("Order not found!")
+	} else if order.status == STATUS_COMPLETED {
+		response = []byte("Order has beel already completed")
 	} else {
 		store.CancelOrder(reqData.OrderId)
 		response = []byte(order.status)
