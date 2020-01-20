@@ -52,7 +52,7 @@ func (s *Store) SubmitOrder(items []int) int {
 func (s *Store) ResolveOrder(orderId int) (string, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	order, ok := s.GetOrder(orderId)
+	order, ok := s.orders[orderId]
 	if !ok {
 		return "", errors.New("Order not found!")
 	}
