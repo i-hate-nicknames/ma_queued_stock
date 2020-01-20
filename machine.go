@@ -54,6 +54,9 @@ func (m *Machine) TakeAll(toTake []int) ([]int, []int) {
 	defer m.mux.Unlock()
 	takenSet := make(map[int]bool, 0)
 	noneTaken := false
+	// instead of this nonsence it would have been much easier
+	// to just instantiate order items as a map and lookup
+	// top item tbh
 	for !noneTaken {
 		noneTaken = true
 		for _, toTakeItem := range toTake {

@@ -64,6 +64,11 @@ func (s *Store) ResolveOrder(orderId int) {
 	} else {
 		order.status = STATUS_PENDING
 	}
+	// todo: try to resolve all other orders if we changed state of at least one machine
+	// tood: later we can use some scheduler structure with a separate routine, and schedule
+	// order retries via it.
+	// Probably can add some checks that will only schedule orders that can take something from
+	// the updated state
 }
 
 func (s *Store) GetOrder(orderId int) (*Order, bool) {

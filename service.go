@@ -8,10 +8,6 @@ import (
 // todo: pass store around as an argument to handlers instead of a global variable
 var store *Store
 
-// TODO: use golang djinn for response handling
-
-// todo: divide over multiple files
-
 // use simplejson for dynamic json marshaling tbh
 
 // todo: move here hw3 automata, init their state somehow
