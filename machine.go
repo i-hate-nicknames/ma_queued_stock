@@ -3,8 +3,16 @@ package main
 import "sync"
 
 type Machine struct {
+	id      int
 	in, out []int
 	mux     sync.Mutex
+}
+
+func MakeMachine(id int, items []int) *Machine {
+	in := make([]int, 0)
+	out := make([]int, len(items))
+	copy(out, items)
+	return &Machine{in: in, out: out, id: id}
 }
 
 func (m *Machine) Put(item int) {

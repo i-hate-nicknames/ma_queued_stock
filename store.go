@@ -18,10 +18,14 @@ type Store struct {
 	mux         sync.Mutex // todo: switch to RW mutext for better performance of read operations
 }
 
-func MakeStore() *Store {
+func MakeStore(machineItems [][]int) *Store {
 	orders := make(map[int]*Order)
-	// todo: init machines somehow
 	machines := make([]*Machine, 0)
+	machineId := 1
+	for _, mItems := range machineItems {
+		machines = append(machines, MakeMachine(machineId, mItems))
+		machineId++
+	}
 	return &Store{machines: machines, orders: orders, nextOrderId: 1}
 }
 
