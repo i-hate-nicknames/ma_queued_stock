@@ -33,6 +33,7 @@ type Order struct {
 	items        []int
 	fetchedItems []int
 	status       string
+	mux          sync.Mutex
 }
 
 func MakeOrder(items []int) *Order {
@@ -50,12 +51,13 @@ func (s *Store) SubmitOrder(items []int) int {
 }
 
 func (s *Store) ResolveOrder(orderId int) (string, error) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	order, ok := s.orders[orderId]
+	order, ok := s.GetOrder(orderId)
 	if !ok {
 		return "", errors.New("Order not found!")
 	}
+	order.mux.Lock()
+	defer order.mux.Unlock()
+	// this assumes s.machines will never be updated simultaneously with this method
 	for _, m := range s.machines {
 		taken, remains := m.TakeAll(order.items)
 		order.items = remains
@@ -86,17 +88,21 @@ func (s *Store) GetOrder(orderId int) (*Order, bool) {
 	return val, ok
 }
 
-func (s *Store) CancelOrder(orderId int) bool {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	if order, ok := s.orders[orderId]; ok {
-		if len(s.machines) == 0 {
-			panic("no machines to put cancelled order items")
-		}
-		m := s.machines[0]
-		m.PutAll(order.fetchedItems)
-		order.status = STATUS_CANCELLED
-		return true
+func (s *Store) CancelOrder(orderId int) error {
+	order, ok := s.GetOrder(orderId)
+	if !ok {
+		return errors.New("Order not found")
 	}
-	return false
+	s.mux.Lock()
+	if len(s.machines) == 0 {
+		return errors.New("no machines to put cancelled order items")
+	}
+	s.mux.Unlock()
+	order.mux.Lock()
+	defer order.mux.Unlock()
+	// this assumes s.machines will never be updated simultaneously with this method
+	m := s.machines[0]
+	m.PutAll(order.fetchedItems)
+	order.status = STATUS_CANCELLED
+	return nil
 }
