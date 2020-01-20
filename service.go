@@ -15,7 +15,7 @@ var store *Store
 // use locks to protect automata state
 
 func main() {
-	store = MakeStore([][]int{})
+	store = MakeStore([][]int{[]int{1, 2, 3}})
 	http.HandleFunc("/submit", submitOrderHandler)
 	http.HandleFunc("/getStatus", getOrderStatusHandler)
 	http.HandleFunc("/cancel", cancelOrderHandler)
