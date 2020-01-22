@@ -36,8 +36,13 @@ func LoadMachines(db *gorm.DB) []*Machine {
 }
 
 func LoadOrders(db *gorm.DB) []*Order {
-	os := make([]*Order, 0)
-	return os
+	var records []OrderRecord
+	db.Find(&records)
+	orders := make([]*Order, 0)
+	for _, record := range records {
+		orders = append(orders, recordToOrder(&record))
+	}
+	return orders
 }
 
 // SaveMachine saves given machine to db. If order.ID is 0,
