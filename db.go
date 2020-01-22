@@ -40,12 +40,20 @@ func LoadOrders(db *gorm.DB) []*Order {
 	return os
 }
 
-func SaveMachine(db *gorm.DB, m Machine) {
-
+// SaveMachine saves given machine to db. If order.ID is 0,
+// this will create a new order. Return orderID
+func SaveMachine(db *gorm.DB, m *Machine) uint {
+	record := machineToRecord(m)
+	db.Save(record)
+	return record.ID
 }
 
-func SaveOrder(db *gorm.DB, o Order) {
-
+// SaveOrder saves given order to db. If order.ID is 0,
+// this will create a new order. Return orderID
+func SaveOrder(db *gorm.DB, o *Order) uint {
+	record := orderToRecord(o)
+	db.Save(record)
+	return record.ID
 }
 
 func Migrate(db *gorm.DB) {

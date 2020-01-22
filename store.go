@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"sync"
 
 	"github.com/jinzhu/gorm"
@@ -31,7 +32,7 @@ func LoadStore(db *gorm.DB) *Store {
 	for _, dbOrder := range dbOrders {
 		orders[dbOrder.ID] = dbOrder
 	}
-	return &Store{machines: machines, orders: orders, nextOrderId: 1}
+	return &Store{machines: machines, orders: orders, nextOrderId: 1, db: db}
 }
 
 type Order struct {
@@ -51,9 +52,10 @@ func (s *Store) SubmitOrder(items []int) uint {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	order := MakeOrder(items)
-	s.orders[s.nextOrderId] = order
-	s.nextOrderId += 1
-	return s.nextOrderId - 1
+	id := SaveOrder(s.db, order)
+	log.Println("Created order with id", id)
+	s.orders[id] = order
+	return id
 }
 
 func (s *Store) ResolveOrder(orderId uint) (string, error) {
