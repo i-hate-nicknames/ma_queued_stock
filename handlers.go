@@ -11,7 +11,7 @@ type NewOrderRequest struct {
 }
 
 type OrderRequest struct {
-	OrderId int
+	OrderId uint
 }
 
 func submitOrderHandler(w http.ResponseWriter, r *http.Request) {

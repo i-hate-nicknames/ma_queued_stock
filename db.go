@@ -30,12 +30,14 @@ func DbConnect() *gorm.DB {
 	return db
 }
 
-func GetMachines(db *gorm.DB) []Machine {
-	panic("cyka")
+func LoadMachines(db *gorm.DB) []*Machine {
+	ms := make([]*Machine, 0)
+	return ms
 }
 
-func GetOrders(db *gorm.DB) []Order {
-	panic("blyat")
+func LoadOrders(db *gorm.DB) []*Order {
+	os := make([]*Order, 0)
+	return os
 }
 
 func SaveMachine(db *gorm.DB, m Machine) {

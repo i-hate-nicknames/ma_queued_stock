@@ -17,7 +17,7 @@ var store *Store
 func main() {
 	db := DbConnect()
 	Migrate(db)
-	store = MakeStore(db)
+	store = LoadStore(db)
 	http.HandleFunc("/submit", submitOrderHandler)
 	http.HandleFunc("/getStatus", getOrderStatusHandler)
 	http.HandleFunc("/cancel", cancelOrderHandler)

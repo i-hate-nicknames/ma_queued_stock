@@ -15,27 +15,23 @@ const (
 
 type Store struct {
 	machines    []*Machine
-	orders      map[int]*Order
-	nextOrderId int
+	orders      map[uint]*Order
+	nextOrderId uint
 	mux         sync.Mutex // todo: switch to RW mutext for better performance of read operations
 	db          *gorm.DB
 }
 
-func MakeStore(db *gorm.DB) *Store {
-	orders := make(map[int]*Order)
-	machines := make([]*Machine, 0)
-	return &Store{machines: machines, orders: orders, nextOrderId: 1}
-}
-
 // Load state of the store from the database
-func LoadState(s *Store) {
-	machineItems := make([][]int, 0)
-	machineItems = append(machineItems, []int{1, 2, 3})
-	machineId := 1
-	for _, mItems := range machineItems {
-		s.machines = append(s.machines, MakeMachine(uint(machineId), mItems))
-		machineId++
+func LoadStore(db *gorm.DB) *Store {
+	dbOrders := LoadOrders(db)
+	machines := LoadMachines(db)
+	// todo: remove debug machine
+	machines = append(machines, MakeMachine(10, []int{5, 4, 3, 2, 1}))
+	orders := make(map[uint]*Order, 0)
+	for _, dbOrder := range dbOrders {
+		orders[dbOrder.ID] = dbOrder
 	}
+	return &Store{machines: machines, orders: orders, nextOrderId: 1}
 }
 
 type Order struct {
@@ -51,7 +47,7 @@ func MakeOrder(items []int) *Order {
 	return &Order{items: items, status: STATUS_PENDING, fetchedItems: fetched}
 }
 
-func (s *Store) SubmitOrder(items []int) int {
+func (s *Store) SubmitOrder(items []int) uint {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	order := MakeOrder(items)
@@ -60,7 +56,7 @@ func (s *Store) SubmitOrder(items []int) int {
 	return s.nextOrderId - 1
 }
 
-func (s *Store) ResolveOrder(orderId int) (string, error) {
+func (s *Store) ResolveOrder(orderId uint) (string, error) {
 	order, ok := s.GetOrder(orderId)
 	if !ok {
 		return "", errors.New("Order not found!")
@@ -91,14 +87,14 @@ func (s *Store) ResolveOrder(orderId int) (string, error) {
 	return order.status, nil
 }
 
-func (s *Store) GetOrder(orderId int) (*Order, bool) {
+func (s *Store) GetOrder(orderId uint) (*Order, bool) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	val, ok := s.orders[orderId]
 	return val, ok
 }
 
-func (s *Store) CancelOrder(orderId int) error {
+func (s *Store) CancelOrder(orderId uint) error {
 	order, ok := s.GetOrder(orderId)
 	if !ok {
 		return errors.New("Order not found")
