@@ -65,6 +65,7 @@ func (s *Store) ResolveOrder(orderId uint) (string, error) {
 	}
 	order.mux.Lock()
 	defer order.mux.Unlock()
+	orderChanged := false
 	// this assumes s.machines will never be updated simultaneously with this method
 	for _, m := range s.machines {
 		taken, remains := m.TakeAll(order.items)
@@ -72,14 +73,20 @@ func (s *Store) ResolveOrder(orderId uint) (string, error) {
 		for _, it := range taken {
 			order.fetchedItems = append(order.fetchedItems, it)
 		}
+		if len(taken) > 0 {
+			orderChanged = true
+		}
 		if len(order.items) == 0 {
 			break
 		}
 	}
-	if len(order.items) == 0 {
-		order.status = STATUS_COMPLETED
-	} else {
-		order.status = STATUS_PENDING
+	if orderChanged {
+		if len(order.items) == 0 {
+			order.status = STATUS_COMPLETED
+		} else {
+			order.status = STATUS_PENDING
+		}
+		SaveOrder(s.db, order)
 	}
 	// todo: try to resolve all other orders if we changed state of at least one machine
 	// todo: later we can use some scheduler structure with a separate routine, and schedule
