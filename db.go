@@ -70,7 +70,14 @@ func SaveOrder(db *gorm.DB, o *Order) uint {
 // return non-nil error in case transaction failed
 func UpdateAtomically(db *gorm.DB, o *Order, m *Machine) error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		// todo: implement
+		orderRecord := orderToRecord(o)
+		if err := tx.Save(orderRecord).Error; err != nil {
+			return err
+		}
+		machineRecord := machineToRecord(m)
+		if err := tx.Save(machineRecord).Error; err != nil {
+			return err
+		}
 		return nil
 	})
 }

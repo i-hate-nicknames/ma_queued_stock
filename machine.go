@@ -67,10 +67,10 @@ func (m *Machine) TakeAll(orderItems []int) ([]int, []int) {
 	return taken, remains
 }
 
-// UpdateStateFrom takes the same machine's copy, and resets its items
+// RestoreFrom takes the same machine's copy, and resets its items
 // state to that copy.
-// Do nohting if given machine is not a copy (checked by machine id)
-func (m *Machine) UpdateStateFrom(other *Machine) {
+// Do nothing if given machine is not a copy (checked by machine id)
+func (m *Machine) RestoreFrom(other *Machine) {
 	if other.ID != m.ID {
 		return
 	}
@@ -78,7 +78,7 @@ func (m *Machine) UpdateStateFrom(other *Machine) {
 	m.out = other.out
 }
 
-func (m *Machine) MakeCopy() *Machine {
+func (m *Machine) Copy() *Machine {
 	cp := &Machine{ID: m.ID}
 	copy(cp.in, m.in)
 	copy(cp.out, m.out)

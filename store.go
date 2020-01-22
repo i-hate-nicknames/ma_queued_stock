@@ -48,6 +48,19 @@ func MakeOrder(items []int) *Order {
 	return &Order{items: items, status: STATUS_PENDING, fetchedItems: fetched}
 }
 
+func (o *Order) Copy() *Order {
+	cp := &Order{ID: o.ID, status: o.status}
+	copy(cp.items, o.items)
+	copy(cp.fetchedItems, cp.fetchedItems)
+	return cp
+}
+
+func (o *Order) RestoreFrom(other *Order) {
+	o.items = other.items
+	o.fetchedItems = other.fetchedItems
+	o.status = other.status
+}
+
 func (s *Store) SubmitOrder(items []int) uint {
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -65,31 +78,36 @@ func (s *Store) ResolveOrder(orderId uint) (string, error) {
 	}
 	order.mux.Lock()
 	defer order.mux.Unlock()
-	orderChanged := false
 	// this assumes s.machines will never be updated simultaneously with this method
-	for _, m := range s.machines {
-		// todo: for each machine: lock machine, try to take as many items as possible
+	for _, machine := range s.machines {
+		// lock machine, try to take as many items as possible
 		// if taken any, start db transaction, save both updated order and machine
 		// within a transaction. If that fails, rollback the states of order and machine
-		taken, remains := m.TakeAll(order.items)
-		order.items = remains
-		for _, it := range taken {
-			order.fetchedItems = append(order.fetchedItems, it)
+		machine.mux.Lock()
+		err := ExecOrRestore(order, machine, func() error {
+			var err error
+			taken, remains := machine.TakeAll(order.items)
+			order.items = remains
+			for _, it := range taken {
+				order.fetchedItems = append(order.fetchedItems, it)
+			}
+			if len(taken) > 0 {
+				if len(order.items) == 0 {
+					order.status = STATUS_COMPLETED
+				} else {
+					order.status = STATUS_PENDING
+				}
+				err = UpdateAtomically(s.db, order, machine)
+			}
+			return err
+		})
+		if err != nil {
+			log.Println("Error when taking items from machine", err)
 		}
-		if len(taken) > 0 {
-			orderChanged = true
-		}
+		machine.mux.Unlock()
 		if len(order.items) == 0 {
 			break
 		}
-	}
-	if orderChanged {
-		if len(order.items) == 0 {
-			order.status = STATUS_COMPLETED
-		} else {
-			order.status = STATUS_PENDING
-		}
-		SaveOrder(s.db, order)
 	}
 	// todo: try to resolve all other orders if we changed state of at least one machine
 	// todo: later we can use some scheduler structure with a separate routine, and schedule
@@ -118,22 +136,36 @@ func (s *Store) CancelOrder(orderId uint) error {
 	s.mux.Unlock()
 	order.mux.Lock()
 	defer order.mux.Unlock()
-	// todo: save both order and machine within a single transaction, on fail
-	// rollback changes done to machine/order in memory
-
 	// this assumes s.machines will never be updated simultaneously with this method
-	m := s.machines[0]
-	m.PutAll(order.fetchedItems)
-	order.fetchedItems = []int{}
-	order.status = STATUS_CANCELLED
-	SaveOrder(s.db, order)
-	return nil
+	machine := s.machines[0]
+	machine.mux.Lock()
+	err := ExecOrRestore(order, machine, func() error {
+		machine.PutAll(order.fetchedItems)
+		order.fetchedItems = []int{}
+		order.status = STATUS_CANCELLED
+		if err := UpdateAtomically(s.db, order, machine); err != nil {
+			return err
+		}
+		return nil
+	})
+	machine.mux.Unlock()
+
+	return err
 }
 
 // todo: implement this and use for transactions
 
-// ExecSafe copies order and machine data, executes f. If f returns an error,
+// ExecOrRestore copies order and machine data, executes f. If f returns an error,
 // the state of order and machine are rolled back
-func (s *Store) ExecSafe(o *Order, m *Machine, f func(*Order, *Machine) error) error {
+func ExecOrRestore(o *Order, m *Machine, f func() error) error {
+	// todo: maybe consider splitting this into two methods SafeExec for
+	// order and machine and just chain them together here tbh
+	orderCopy := o.Copy()
+	machineCopy := m.Copy()
+	if err := f(); err != nil {
+		o.RestoreFrom(orderCopy)
+		m.RestoreFrom(machineCopy)
+		return err
+	}
 	return nil
 }
