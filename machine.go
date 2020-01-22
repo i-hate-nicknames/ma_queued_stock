@@ -34,8 +34,6 @@ func (m *Machine) put(item int) {
 // the item taken from this machine, the second one all the items
 // in toTake that can't be taken from this machine
 func (m *Machine) TakeAll(orderItems []int) ([]int, []int) {
-	m.mux.Lock()
-	defer m.mux.Unlock()
 	noneTaken := false
 	toTake := make(map[int]int, 0)
 	for _, orderItem := range orderItems {
@@ -67,6 +65,24 @@ func (m *Machine) TakeAll(orderItems []int) ([]int, []int) {
 		}
 	}
 	return taken, remains
+}
+
+// UpdateStateFrom takes the same machine's copy, and resets its items
+// state to that copy.
+// Do nohting if given machine is not a copy (checked by machine id)
+func (m *Machine) UpdateStateFrom(other *Machine) {
+	if other.ID != m.ID {
+		return
+	}
+	m.in = other.in
+	m.out = other.out
+}
+
+func (m *Machine) MakeCopy() *Machine {
+	cp := &Machine{ID: m.ID}
+	copy(cp.in, m.in)
+	copy(cp.out, m.out)
+	return cp
 }
 
 // GetAllItems gets all items in this machine in the queue order

@@ -22,7 +22,7 @@ type Store struct {
 	db          *gorm.DB
 }
 
-// Load state of the store from the database
+// LoadStore loads state of the store from the database
 func LoadStore(db *gorm.DB) *Store {
 	dbOrders := LoadOrders(db)
 	machines := LoadMachines(db)
@@ -68,6 +68,9 @@ func (s *Store) ResolveOrder(orderId uint) (string, error) {
 	orderChanged := false
 	// this assumes s.machines will never be updated simultaneously with this method
 	for _, m := range s.machines {
+		// todo: for each machine: lock machine, try to take as many items as possible
+		// if taken any, start db transaction, save both updated order and machine
+		// within a transaction. If that fails, rollback the states of order and machine
 		taken, remains := m.TakeAll(order.items)
 		order.items = remains
 		for _, it := range taken {
@@ -115,9 +118,22 @@ func (s *Store) CancelOrder(orderId uint) error {
 	s.mux.Unlock()
 	order.mux.Lock()
 	defer order.mux.Unlock()
+	// todo: save both order and machine within a single transaction, on fail
+	// rollback changes done to machine/order in memory
+
 	// this assumes s.machines will never be updated simultaneously with this method
 	m := s.machines[0]
 	m.PutAll(order.fetchedItems)
+	order.fetchedItems = []int{}
 	order.status = STATUS_CANCELLED
+	SaveOrder(s.db, order)
+	return nil
+}
+
+// todo: implement this and use for transactions
+
+// ExecSafe copies order and machine data, executes f. If f returns an error,
+// the state of order and machine are rolled back
+func (s *Store) ExecSafe(o *Order, m *Machine, f func(*Order, *Machine) error) error {
 	return nil
 }

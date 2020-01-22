@@ -31,8 +31,13 @@ func DbConnect() *gorm.DB {
 }
 
 func LoadMachines(db *gorm.DB) []*Machine {
-	ms := make([]*Machine, 0)
-	return ms
+	var records []MachineRecord
+	db.Find(&records)
+	machines := make([]*Machine, 0)
+	for _, record := range records {
+		machines = append(machines, recordToMachine(&record))
+	}
+	return machines
 }
 
 func LoadOrders(db *gorm.DB) []*Order {
@@ -59,6 +64,15 @@ func SaveOrder(db *gorm.DB, o *Order) uint {
 	record := orderToRecord(o)
 	db.Save(record)
 	return record.ID
+}
+
+// UpdateAtomically updates both order and machine within a single transaction
+// return non-nil error in case transaction failed
+func UpdateAtomically(db *gorm.DB, o *Order, m *Machine) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		// todo: implement
+		return nil
+	})
 }
 
 func Migrate(db *gorm.DB) {
