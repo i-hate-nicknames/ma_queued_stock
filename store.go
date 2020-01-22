@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"sync"
+
+	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -16,20 +18,28 @@ type Store struct {
 	orders      map[int]*Order
 	nextOrderId int
 	mux         sync.Mutex // todo: switch to RW mutext for better performance of read operations
+	db          *gorm.DB
 }
 
-func MakeStore(machineItems [][]int) *Store {
+func MakeStore(db *gorm.DB) *Store {
 	orders := make(map[int]*Order)
 	machines := make([]*Machine, 0)
-	machineId := 1
-	for _, mItems := range machineItems {
-		machines = append(machines, MakeMachine(machineId, mItems))
-		machineId++
-	}
 	return &Store{machines: machines, orders: orders, nextOrderId: 1}
 }
 
+// Load state of the store from the database
+func LoadState(s *Store) {
+	machineItems := make([][]int, 0)
+	machineItems = append(machineItems, []int{1, 2, 3})
+	machineId := 1
+	for _, mItems := range machineItems {
+		s.machines = append(s.machines, MakeMachine(uint(machineId), mItems))
+		machineId++
+	}
+}
+
 type Order struct {
+	ID           uint
 	items        []int
 	fetchedItems []int
 	status       string

@@ -5,16 +5,16 @@ import (
 )
 
 type Machine struct {
-	id      int
+	ID      uint
 	in, out []int
 	mux     sync.Mutex
 }
 
-func MakeMachine(id int, items []int) *Machine {
+func MakeMachine(id uint, items []int) *Machine {
 	in := make([]int, 0)
 	out := make([]int, len(items))
 	copy(out, items)
-	return &Machine{in: in, out: out, id: id}
+	return &Machine{in: in, out: out, ID: id}
 }
 
 func (m *Machine) PutAll(items []int) {
@@ -67,6 +67,18 @@ func (m *Machine) TakeAll(orderItems []int) ([]int, []int) {
 		}
 	}
 	return taken, remains
+}
+
+// GetAllItems gets all items in this machine in the queue order
+func (m *Machine) GetAllItems() []int {
+	result := make([]int, 0)
+	for i := len(m.out) - 1; i >= 0; i-- {
+		result = append(result, m.out[i])
+	}
+	for i := 0; i < len(m.in); i++ {
+		result = append(result, m.in[i])
+	}
+	return result
 }
 
 func (m *Machine) take() (int, bool) {
