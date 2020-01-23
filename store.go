@@ -15,24 +15,32 @@ const (
 )
 
 type Store struct {
-	machines    []*Machine
-	orders      map[uint]*Order
-	nextOrderId uint
-	mux         sync.Mutex // todo: switch to RW mutext for better performance of read operations
-	db          *gorm.DB
+	machines []*Machine
+	orders   map[uint]*Order
+	mux      sync.Mutex // todo: switch to RW mutext for better performance of read operations
+	db       *gorm.DB
 }
 
 // LoadStore loads state of the store from the database
 func LoadStore(db *gorm.DB) *Store {
 	dbOrders := LoadOrders(db)
 	machines := LoadMachines(db)
-	// todo: remove debug machine
-	machines = append(machines, MakeMachine(10, []int{5, 4, 3, 2, 1}))
 	orders := make(map[uint]*Order, 0)
 	for _, dbOrder := range dbOrders {
 		orders[dbOrder.ID] = dbOrder
 	}
-	return &Store{machines: machines, orders: orders, nextOrderId: 1, db: db}
+	return &Store{machines: machines, orders: orders, db: db}
+}
+
+func (s *Store) generateMachines() {
+	ms := make([]*Machine, 0)
+	ms = append(ms, MakeMachine(10, []int{5, 4, 3, 2, 1}))
+	ms = append(ms, MakeMachine(15, []int{44, 32, 12}))
+	ms = append(ms, MakeMachine(25, []int{1, 2, 3}))
+	for _, m := range ms {
+		SaveMachine(s.db, m)
+	}
+	s.machines = ms
 }
 
 type Order struct {
@@ -152,8 +160,6 @@ func (s *Store) CancelOrder(orderId uint) error {
 
 	return err
 }
-
-// todo: implement this and use for transactions
 
 // ExecOrRestore copies order and machine data, executes f. If f returns an error,
 // the state of order and machine are rolled back
